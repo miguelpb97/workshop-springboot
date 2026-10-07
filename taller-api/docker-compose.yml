@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: taller-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: taller_db
+      POSTGRES_USER: taller_user
+      POSTGRES_PASSWORD: taller_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - taller_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taller_user -d taller_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: taller-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: taller_db
+      DB_USER: taller_user
+      DB_PASSWORD: taller_pass
+      # En un entorno real esto vendria de un secret manager, nunca hardcodeado
+      JWT_SECRET: cambia-esta-clave-en-produccion-por-una-mucho-mas-larga-y-secreta-1234567890
+    ports:
+      - "8080:8080"
+
+volumes:
+  taller_db_data:
